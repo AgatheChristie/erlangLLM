@@ -1,5 +1,5 @@
 -module(sys_ai_model).
--include("common.hrl").
+
 
 -record(sys_ai_model, {
     id,
@@ -36,12 +36,12 @@ get(70001) -> #sys_ai_model{id = 70001, model = <<"qwen-max">>,                 
 get(70002) -> #sys_ai_model{id = 70002, model = <<"qwen-plus">>,                   desc = <<"通义千问 Plus 性能均衡"/utf8>>,             mod_name = <<"qianwen">>};
 get(70003) -> #sys_ai_model{id = 70003, model = <<"qwen-turbo">>,                  desc = <<"通义千问 Turbo 高速低成本"/utf8>>,          mod_name = <<"qianwen">>};
 get(70004) -> #sys_ai_model{id = 70004, model = <<"qwen-long">>,                   desc = <<"通义千问 Long 超长上下文"/utf8>>,            mod_name = <<"qianwen">>};
-get(_Id) -> ?ERROR("data not exist:~p", [_Id]), throw({error, 20}).
+get(_Id) -> io:format("data not exist:~p", [_Id]), throw({error, 20}).
 
 get(ML, Id) ->
     case catch sys_ai_model:get(Id) of
         #sys_ai_model{} = T -> T;
-        _ -> ?ERROR("function data info:~w ~p", [ML, Id]), throw({error, 20})
+        _ -> io:format("function data info:~w ~p", [ML, Id]), throw({error, 20})
     end.
 
 is_has(Id) ->

@@ -1,6 +1,6 @@
 
 -module(ai_util).
--include("common.hrl").
+
 
 -compile(export_all).
 -compile(nowarn_export_all).

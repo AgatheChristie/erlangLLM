@@ -6,6 +6,8 @@
 -define(AI_STREAM_CONTENT,  1).  %% 流式普通
 -define(AI_STREAM_COLLECT, 2).   %% 流式收集
 
+-define(HTTP_CONNECT_TIMEOUT, 1500000).%% 给 15 分钟
+-define(HTTP_RECV_TIMEOUT, 1200000).  %% AI 生成可能较慢，给 20 分钟
 
 %% 这三个消息是推送给WS的
 %%ai_stream_done  ai_stream_chunk ai_stream_error

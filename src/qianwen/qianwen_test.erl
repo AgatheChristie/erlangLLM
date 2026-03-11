@@ -1,6 +1,5 @@
 
 -module(qianwen_test).
--include("common.hrl").
 -include("ai_tou.hrl").
 -compile(export_all).
 -compile(nowarn_export_all).

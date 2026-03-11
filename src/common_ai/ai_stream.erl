@@ -28,7 +28,7 @@
 %%%-------------------------------------------------------------------
 
 -module(ai_stream).
--include("common.hrl").
+
 -include("ai_tou.hrl").
 
 -compile(export_all).
@@ -70,10 +70,10 @@ request(Url, Headers, Payload, Callback) when is_function(Callback, 1) ->
             stream_loop(ClientRef, <<>>, Callback);
         {ok, StatusCode, _RespHeaders, ClientRef} ->
             {ok, Body} = hackney:body(ClientRef),
-            ?INFO("[ai_stream] HTTP 错误 ~p: ~ts~n", [StatusCode, Body]),
+            io:format("[ai_stream] HTTP 错误 ~p: ~ts~n", [StatusCode, Body]),
             {error, {http_error, StatusCode, Body}};
         {error, Reason} ->
-            ?INFO("[ai_stream] 网络错误: ~p~n", [Reason]),
+            io:format("[ai_stream] 网络错误: ~p~n", [Reason]),
             {error, Reason}
     end.
 
@@ -162,12 +162,28 @@ get_content_extract_fun(_, Flag) ->
                 case maps:get(<<"delta">>, Json, undefined) of
                     undefined -> skip;
                     null      -> skip;
-                    Delta     -> ?IF(Flag == ?AI_STREAM_CONTENT, {ok, Delta}, {text, Delta})
+                    Delta     ->
+                        case Flag == ?AI_STREAM_CONTENT of
+                            true ->
+                                {ok, Delta};
+                            _ ->
+                                {text, Delta}
+                        end
                 end;
             <<"response.output_text.done">> ->
-                ?IF(Flag == ?AI_STREAM_CONTENT, skip, done);
+                case Flag == ?AI_STREAM_CONTENT of
+                    true ->
+                        skip;
+                    _ ->
+                        done
+                end;
             <<"response.completed">> ->
-                ?IF(Flag == ?AI_STREAM_CONTENT, skip, done);
+                case Flag == ?AI_STREAM_CONTENT of
+                    true ->
+                        skip;
+                    _ ->
+                        done
+                end;
             _ ->
                 skip
         end
@@ -208,10 +224,10 @@ process_sse_event(<<"[DONE]">>, Callback) ->
 process_sse_event(EventData, Callback) ->
     try
         JsonMap = jiffy:decode(EventData, [return_maps]),
-%%       ?INFO("JsonMap:~p end",[JsonMap]),
+%%       io:format("JsonMap:~p end",[JsonMap]),
         Callback(#{type => data, data => JsonMap})
     catch _:ParseErr ->
-        ?INFO("[ai_stream] SSE 事件解析失败: ~p, 原始数据: ~ts~n",
+        io:format("[ai_stream] SSE 事件解析失败: ~p, 原始数据: ~ts~n",
             [ParseErr, EventData]),
         Callback(#{type => error, reason => {parse_error, EventData}})
     end.
@@ -246,7 +262,7 @@ do_stream_generate(Opts, WsPid, Provider, DoFun, StreamOpts) ->
     Callback = fun(Event) ->
         case Event of
             #{type := data, data := Json} ->
-%%                ?INFO("[debug] SSE event: ~p~n", [Json]),
+%%                io:format("[debug] SSE event: ~p~n", [Json]),
                 case ContentFun(Json) of
                     {ok, Content} ->
                         Buf0 = get(?DIC_S_JSON_BUF),
@@ -265,13 +281,13 @@ do_stream_generate(Opts, WsPid, Provider, DoFun, StreamOpts) ->
             #{type := error, reason := Reason} ->
                 WsPid ! {ai_stream_error, Reason};
             _E ->
-                ?INFO("[debug] SSE 222222222qqqqq: ~p~n", [_E]),
+                io:format("[debug] SSE 222222222qqqqq: ~p~n", [_E]),
                 ok
         end
                end,
 
     Mod = ai_provider:provider_module(Provider),
-    ?INFO("[debug][do_stream] Provider=~p, Mod=~p, ModelName=~p~n",
+    io:format("[debug][do_stream] Provider=~p, Mod=~p, ModelName=~p~n",
           [Provider, Mod, ModelName]),
     StreamResult = case ModelName of
                        undefined ->
@@ -284,7 +300,7 @@ do_stream_generate(Opts, WsPid, Provider, DoFun, StreamOpts) ->
     case StreamResult of
         ok ->
             FullBuf = get(?DIC_S_JSON_BUF),
-            ?INFO("[debug][do_stream] FullBuf size=~p~n", [byte_size(FullBuf)]),
+            io:format("[debug][do_stream] FullBuf size=~p~n", [byte_size(FullBuf)]),
             case Mode of
                 text ->
                     WsPid ! ai_stream_done;
@@ -303,7 +319,7 @@ do_stream_generate(Opts, WsPid, Provider, DoFun, StreamOpts) ->
             end;
         {error, Reason} ->
             WsPid ! {ai_stream_error, Reason},
-            ?ERROR("[ai_stream] stream error: ~p~n", [Reason]),
+            io:format("[ai_stream] stream error: ~p~n", [Reason]),
             {error, Reason}
     end.
 
@@ -344,7 +360,7 @@ maybe_send_stream_done(complete, WsPid) ->
         true ->
             ok;  %% 已经发过了
         _ ->
-            ?INFO("[ai_provider] text 字段完成, 提前发送 stream_done~n", []),
+            io:format("[ai_provider] text 字段完成, 提前发送 stream_done~n", []),
             WsPid ! ai_stream_done,
             put(?DIC_S_TEXT_DONE_SENT, true)
     end;

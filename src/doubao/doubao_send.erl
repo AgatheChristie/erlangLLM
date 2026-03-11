@@ -21,7 +21,6 @@
 
 -module(doubao_send).
 -behaviour(ai_send_behavior).
--include("common.hrl").
 -include("ai_tou.hrl").
 
 -compile(export_all).

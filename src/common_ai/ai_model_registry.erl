@@ -15,7 +15,7 @@
 %%%-------------------------------------------------------------------
 
 -module(ai_model_registry).
--include("common.hrl").
+
 
 -compile(export_all).
 -compile(nowarn_export_all).
@@ -34,7 +34,7 @@ init_models() ->
 reload_models() ->
     Models = sys_ai_model:all_maps(),
     persistent_term:put(?MODELS_CACHE_KEY, Models),
-    ?INFO("[ai_model_registry] Loaded ~p models from sys_ai_model~n",
+    io:format("[ai_model_registry] Loaded ~p models from sys_ai_model~n",
           [length(Models)]),
     ok.
 
@@ -115,7 +115,7 @@ set_model(ModelId) when is_integer(ModelId) ->
             Provider = ai_model_registry:id_to_provider(ModelId),
             ensure_config_ets(),
             ets:insert(?ETS_AI_CONFIG, {current_model_id, ModelId}),
-            ?INFO("[adapter] AI 模型已切换为: ~p (~ts, ~p)~n", [ModelId, Model, Provider]),
+            io:format("[adapter] AI 模型已切换为: ~p (~ts, ~p)~n", [ModelId, Model, Provider]),
             ok;
         error ->
             {error, {unknown_model_id, ModelId}}

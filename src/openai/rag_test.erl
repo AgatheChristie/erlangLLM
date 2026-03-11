@@ -11,7 +11,6 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(rag_test).
--include("common.hrl").
 -include("ai_tou.hrl").
 -compile(export_all).
 -compile(nowarn_export_all).
@@ -53,7 +52,7 @@ init() ->
     epgsql:squery(C,
         "CREATE INDEX IF NOT EXISTS knowledge_embedding_idx "
         "ON knowledge USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1)"),
-    ?INFO("[RAG] knowledge table created (dim=~p)", [?EMBED_DIM]),
+    io:format("[RAG] knowledge table created (dim=~p)", [?EMBED_DIM]),
     ok = epgsql:close(C).
 
 %%====================================================================
@@ -77,7 +76,7 @@ knowledge_data() ->
 %% rag_test:load_knowledge().
 load_knowledge() ->
     Texts = knowledge_data(),
-    ?INFO("[RAG] generating embeddings for ~p texts...", [length(Texts)]),
+    io:format("[RAG] generating embeddings for ~p texts...", [length(Texts)]),
 
     case openai_test:embedding_vectors(Texts, #{dimensions => ?EMBED_DIM}) of
         {ok, Vectors} ->
@@ -90,10 +89,10 @@ load_knowledge() ->
                     [Text, VecStr])
             end, lists:zip(Texts, Vectors)),
             ok = epgsql:close(C),
-            ?INFO("[RAG] ~p knowledge entries stored", [length(Texts)]),
+            io:format("[RAG] ~p knowledge entries stored", [length(Texts)]),
             ok;
         {error, Reason} ->
-            ?INFO("[RAG] embedding failed: ~p", [Reason]),
+            io:format("[RAG] embedding failed: ~p", [Reason]),
             {error, Reason}
     end.
 
@@ -118,9 +117,9 @@ search(Question, TopK) ->
                 [VecStr, TopK]),
             ok = epgsql:close(C),
             Results = [{Content, Sim} || {Content, Sim} <- Rows],
-            ?INFO("[RAG] search '~ts' top ~p results:", [Question, TopK]),
+            io:format("[RAG] search '~ts' top ~p results:", [Question, TopK]),
             lists:foreach(fun({Content, Sim}) ->
-                ?INFO("  [~.4f] ~ts", [Sim, Content])
+                io:format("  [~.4f] ~ts", [Sim, Content])
             end, Results),
             {ok, Results};
         {error, Reason} ->
@@ -139,10 +138,10 @@ ask(Question) ->
             SystemPrompt = <<"你是一个知识问答助手。请根据以下参考资料回答用户的问题。"
                              "如果参考资料中没有相关信息，请诚实地说不知道。\n\n"
                              "参考资料：\n"/utf8, Context/binary>>,
-            ?INFO("[RAG] sending to ChatGPT with ~p context entries", [length(Results)]),
+            io:format("[RAG] sending to ChatGPT with ~p context entries", [length(Results)]),
             Answer = openai_test:chat(Question, SystemPrompt),
-            ?INFO("[RAG] question: ~ts", [Question]),
-            ?INFO("[RAG] answer: ~ts", [Answer]),
+            io:format("[RAG] question: ~ts", [Question]),
+            io:format("[RAG] answer: ~ts", [Answer]),
             {ok, Answer};
         {error, Reason} ->
             {error, Reason}
@@ -154,15 +153,15 @@ ask(Question) ->
 
 %% rag_test:demo().
 demo() ->
-    ?INFO("========== RAG Demo Start =========="),
+    io:format("========== RAG Demo Start =========="),
     init(),
     load_knowledge(),
-    ?INFO("--- search test ---"),
+    io:format("--- search test ---"),
     search(<<"哪种水果适合运动后吃"/utf8>>),
     search(<<"什么编程语言适合做分布式"/utf8>>),
-    ?INFO("--- full RAG test ---"),
+    io:format("--- full RAG test ---"),
     ask(<<"什么动物最忠诚"/utf8>>),
-    ?INFO("========== RAG Demo End =========="),
+    io:format("========== RAG Demo End =========="),
     ok.
 
 %%====================================================================
@@ -185,7 +184,7 @@ build_context(Results) ->
 %% rag_test:probe_embedding().
 probe_embedding() ->
     TestText = <<"这是一段用于测试Embedding接口的中文文本"/utf8>>,
-    ?INFO("===== Embedding API 探测 (text-embedding-3-small) ====="),
+    io:format("===== Embedding API 探测 (text-embedding-3-small) ====="),
 
     Tests = [
         {<<"原生维度(不传dimensions)">>, #{}},
@@ -196,14 +195,14 @@ probe_embedding() ->
     ],
 
     lists:foreach(fun({Label, Opts}) ->
-        ?INFO("[~ts] 测试中...", [Label]),
+        io:format("[~ts] 测试中...", [Label]),
         case openai_test:embedding_vectors(TestText, Opts) of
             {ok, [Vec]} ->
-                ?INFO("[~ts] OK  维度=~p  前3值=~p", [Label, length(Vec), lists:sublist(Vec, 3)]);
+                io:format("[~ts] OK  维度=~p  前3值=~p", [Label, length(Vec), lists:sublist(Vec, 3)]);
             {error, Reason} ->
-                ?INFO("[~ts] FAIL ~p", [Label, Reason])
+                io:format("[~ts] FAIL ~p", [Label, Reason])
         end
     end, Tests),
 
-    ?INFO("===== 探测完毕 ====="),
+    io:format("===== 探测完毕 ====="),
     ok.

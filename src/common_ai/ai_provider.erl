@@ -27,7 +27,7 @@
 %%%-------------------------------------------------------------------
 
 -module(ai_provider).
--include("common.hrl").
+
 -include("ai_tou.hrl").
 
 -compile(export_all).
@@ -195,10 +195,10 @@ reload_schema() ->
         {ok, Bin} ->
             Schema = jiffy:decode(Bin, [return_maps]),
             persistent_term:put(?SCHEMA_CACHE_KEY, Schema),
-            ?INFO("[ai_provider] Schema loaded from ~s~n", [?SCHEMA_JSON_PATH]),
+            io:format("[ai_provider] Schema loaded from ~s~n", [?SCHEMA_JSON_PATH]),
             ok;
         {error, Reason} ->
-            ?INFO("[ai_provider] Failed to load schema from ~s: ~p, using fallback~n",
+            io:format("[ai_provider] Failed to load schema from ~s: ~p, using fallback~n",
                 [?SCHEMA_JSON_PATH, Reason]),
             {error, Reason}
     end.
@@ -219,7 +219,7 @@ get_game_response_schema() ->
                     {ok, persistent_term:get(?SCHEMA_CACHE_KEY)};
                 {error, _} ->
                     %% 文件加载失败, 降级到硬编码版本
-                    ?INFO("[ai_provider] Fallback to hardcoded schema~n", []),
+                    io:format("[ai_provider] Fallback to hardcoded schema~n", []),
                     err
             end
     end.

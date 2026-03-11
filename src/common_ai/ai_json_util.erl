@@ -1,5 +1,5 @@
 -module(ai_json_util).
--include("common.hrl").
+
 
 
 -compile(export_all).

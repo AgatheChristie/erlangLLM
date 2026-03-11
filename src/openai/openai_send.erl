@@ -35,7 +35,6 @@
 
 -module(openai_send).
 -behaviour(ai_send_behavior).
--include("common.hrl").
 -include("ai_tou.hrl").
 -compile(export_all).
 -compile(nowarn_export_all).
@@ -371,12 +370,29 @@ responses_content_extract_fun(Flag) ->
                 case maps:get(<<"delta">>, Json, undefined) of
                     undefined -> skip;
                     null      -> skip;
-                    Delta     -> ?IF(Flag == ?AI_STREAM_CONTENT, {ok, Delta}, {text, Delta})
+                    Delta     ->
+                        case Flag == ?AI_STREAM_CONTENT of
+                            true ->
+                                {ok, Delta};
+                            _ ->
+                                {text, Delta}
+                        end
+
                 end;
             <<"response.output_text.done">> ->
-                ?IF(Flag == ?AI_STREAM_CONTENT, skip, done);
+                case Flag == ?AI_STREAM_CONTENT of
+                    true ->
+                        skip;
+                    _ ->
+                        done
+                end;
             <<"response.completed">> ->
-                ?IF(Flag == ?AI_STREAM_CONTENT, skip, done);
+                case Flag == ?AI_STREAM_CONTENT of
+                    true ->
+                        skip;
+                    _ ->
+                        done
+                end;
             _ ->
                 skip
         end

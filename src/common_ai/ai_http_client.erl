@@ -16,7 +16,7 @@
 %%%-------------------------------------------------------------------
 
 -module(ai_http_client).
--include("common.hrl").
+-include("ai_tou.hrl").
 
 -compile(export_all).
 -compile(nowarn_export_all).
@@ -91,7 +91,7 @@ do_request(Method, Url, Headers, Payload, Attempt, MaxAttempts, LogPrefix, Retry
                     %% 读掉 body 释放连接, 然后延迟重试
                     hackney:body(ClientRef),
                     Delay = retry_delay(Attempt),
-                    ?INFO("[~s HTTP] ~p 临时错误, ~.1fs 后第~p次重试...~n",
+                    io:format("[~s HTTP] ~p 临时错误, ~.1fs 后第~p次重试...~n",
                           [LogPrefixStr, StatusCode, Delay / 1000, Attempt + 1]),
                     timer:sleep(Delay),
                     do_request(Method, Url, Headers, Payload,
@@ -99,21 +99,21 @@ do_request(Method, Url, Headers, Payload, Attempt, MaxAttempts, LogPrefix, Retry
                                RetryableStatus, EnableLog);
                 false ->
                     {ok, Body} = hackney:body(ClientRef),
-                    ?INFO("[~s] 请求失败 [~p]: ~ts~n", [LogPrefixStr, StatusCode, Body]),
+                    io:format("[~s] 请求失败 [~p]: ~ts~n", [LogPrefixStr, StatusCode, Body]),
                     {error, {http_error, StatusCode, Body}}
             end;
         {error, Reason} ->
             case Attempt + 1 < MaxAttempts of
                 true ->
                     Delay = retry_delay(Attempt),
-                    ?INFO("[~s HTTP] 网络错误 ~p, ~.1fs 后第~p次重试...~n",
+                    io:format("[~s HTTP] 网络错误 ~p, ~.1fs 后第~p次重试...~n",
                           [LogPrefixStr, Reason, Delay / 1000, Attempt + 1]),
                     timer:sleep(Delay),
                     do_request(Method, Url, Headers, Payload,
                                Attempt + 1, MaxAttempts, LogPrefix,
                                RetryableStatus, EnableLog);
                 false ->
-                    ?INFO("[~s] 请求错误 (重试~p次仍失败): ~p~n",
+                    io:format("[~s] 请求错误 (重试~p次仍失败): ~p~n",
                           [LogPrefixStr, MaxAttempts - 1, Reason]),
                     {error, Reason}
             end
